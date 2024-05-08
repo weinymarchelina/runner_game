@@ -6,25 +6,26 @@ public class StickManManager : MonoBehaviour
     public bool MoveByTouch;
     public Rigidbody PlrRb;
     Animator animator;
-    float velocity = 0.5f;
-    public float accleration = 0.9f;
-    public float decelaration = 0.1f;
-    int VelocityHash;
+    public float accleration = 1.5f;
 
-    public float walkSpeed = 1f;
+    public float walkSpeed = 0.5f;
     public float jumpForce = 5f;
     public float leapForwardForce = 1.5f;
     public bool isGrounded = false;
     private bool canMove = true;
     private bool reachedFinal = false;
+    private bool isRunAudioPlaying = false;
+    public AudioSource footstepsSound;
 
     private Vector3 targetPosition; // Target position to smoothly move towards
     private Quaternion targetRotation; // Target rotation (180 degrees around Y-axis)
 
+    AudioManager audioManager;
+
     private void Start()
     {
         animator = GetComponent<Animator>();
-        VelocityHash = Animator.StringToHash("Velocity");
+        audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
     }
 
     void Update()
@@ -43,11 +44,22 @@ public class StickManManager : MonoBehaviour
         if (stopPressed)
         {
             MoveByTouch = false;
+
+            footstepsSound.enabled = false;
+            /*
+            if (isRunAudioPlaying && !canMove && !reachedFinal)
+            {
+                audioManager.StopSFX();
+            }
+            */
+
+            animator.SetBool("IsRunning", false);
         }
 
         if (jumpPressed) 
         {
             TryJump();
+            
         }
 
         if (MoveByTouch && canMove)
@@ -56,14 +68,9 @@ public class StickManManager : MonoBehaviour
         }
         else
         {
-            if (velocity > 0.0f)
-            {
-                velocity -= Time.deltaTime * decelaration;
-            }
-            else
-            {
-                velocity = 0.0f;
-            }
+            walkSpeed = 0.5f;
+            animator.SetBool("IsRunning", false);
+            footstepsSound.enabled = false;
         }
 
         if (reachedFinal && !canMove)
@@ -80,7 +87,6 @@ public class StickManManager : MonoBehaviour
             }
         }
 
-        animator.SetFloat(VelocityHash, velocity);
     }
 
     void MovePlayer()
@@ -88,18 +94,18 @@ public class StickManManager : MonoBehaviour
         if (!reachedFinal)
         {
             // Calculate movement direction based on input
-            float moveInput = Input.GetAxis("Horizontal"); // Assuming horizontal movement
+            float moveInput = Input.GetAxis("Horizontal"); 
             Vector3 movement = new Vector3(moveInput, 0f, 1f) * walkSpeed * Time.deltaTime;
-            
-            if (velocity < 1.0f)
-            {
-                velocity += Time.deltaTime * accleration;
-            }
 
-            // Apply movement to the player's position
+            walkSpeed += Time.deltaTime * accleration;
             transform.Translate(movement, Space.World);
 
-            // animator.SetFloat("run", 1f); // Trigger walk animation based on movement
+            animator.SetBool("IsRunning", true);
+            footstepsSound.enabled = true;
+            // audioManager.PlaySFX(audioManager.run);
+
+            // Check if the player has started moving (IsRunning is true
+            
         }
     }
 
@@ -108,8 +114,8 @@ public class StickManManager : MonoBehaviour
         if (isGrounded)
         {
             Debug.Log("Jumping!");
+            audioManager.PlaySFX(audioManager.jump);
             PlrRb.AddForce(new Vector3(0, jumpForce, leapForwardForce), ForceMode.Impulse);
-            // StickMan_Anim.SetTrigger("jump"); // Trigger jump animation
         }
         else
         {
@@ -124,7 +130,9 @@ public class StickManManager : MonoBehaviour
         // Check if the player collides with a hurdle (tagged as "Hurdle")
         if (collision.gameObject.CompareTag("Hurdle"))
         {
+            walkSpeed = 0.5f;
             animator.SetBool("IsFalling", true);
+            audioManager.PlaySFX(audioManager.crash_chicken);
 
             Rigidbody hurdleRb = collision.gameObject.GetComponent<Rigidbody>();
 
@@ -136,7 +144,7 @@ public class StickManManager : MonoBehaviour
             Vector3 newPosition = new Vector3(currentPosition.x, -0.5f, currentPosition.z);
             hurdleRb.MovePosition(newPosition);
 
-            StartCoroutine(DisableMovementForDuration(5f));
+            StartCoroutine(DisableMovementForDuration(3f));
 
             
         }
@@ -154,6 +162,8 @@ public class StickManManager : MonoBehaviour
             targetPosition = new Vector3(transform.position.x, transform.position.y, 20f);
             targetRotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
             animator.SetBool("IsWinning", true);
+            audioManager.PlaySFX(audioManager.victory);
+            audioManager.PlaySFX(audioManager.cheer);
             Debug.Log("Reached Final!");
         }
     }
@@ -180,4 +190,5 @@ public class StickManManager : MonoBehaviour
         animator.SetBool("IsFalling", false);
         PlrRb.AddForce(new Vector3(0, 1f, 0), ForceMode.Impulse);
     }
+
 }

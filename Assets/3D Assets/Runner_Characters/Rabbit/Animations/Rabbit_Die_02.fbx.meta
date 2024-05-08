@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 6a69d669faaf93844923d496a7e2e7aa
+guid: d7c8d48ad8ca9f141bef7a460beec7fb
 ModelImporter:
   serializedVersion: 19301
   internalIDToNameTable:
@@ -10,8 +10,8 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: KIDS_ANIMAL_PARK_phong3
-    second: {fileID: 2100000, guid: e681fc1a3fcab314a8423b6351a0919b, type: 2}
+      name: Rabbit_Rig_Die_02_Rabbit_Texture
+    second: {fileID: 2100000, guid: f636716d26218db4eab257ecdceeefe3, type: 2}
   materials:
     materialImportMode: 1
     materialName: 0
