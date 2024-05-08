@@ -8,6 +8,13 @@ TagManager:
   - Ground
   - StickMan
   - Final
+  - Audio
+  - Platform
+  - HurdleSpawner
+  - obstacle
+  - add
+  - hit
+  - Roads
   layers:
   - Default
   - TransparentFX

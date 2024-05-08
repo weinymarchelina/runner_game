@@ -1,81 +1,147 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
-    public bool MoveByTouch;
-    private Rigidbody PlrRb;
-    private Animator StickMan_Anim;
+    private Rigidbody playerRB;
+    private AudioSource footstepsSound;
+    private Animator animator;
+    private AudioManager audioManager;
+    private Measurer measurer;
 
-    public float walkSpeed = 1f;
-    public float jumpForce = 5f;
-    public bool isGrounded = false;
+    private const float BASE_ACCELARATION = 0.5f;
+    private const float BASE_WALK_SPEED = 0.5f;
+    private const float BASE_INTERPOLATION_SPEED = 2.5f;
 
-    void Start()
+    public float finalStandingPositionZ = 25f;
+
+    public float walkSpeed = BASE_WALK_SPEED;
+    public float jumpForce = 3f;
+    public float leapLength = 1f;
+
+    private bool isMoveByTouch = false;
+    private bool isOnGround = false;
+    private bool isNotFall = true;
+    private bool hasReachedFinal = false;
+    
+    private Vector3 targetPosition; // Target position to smoothly move towards
+    private Quaternion targetRotation; // Target rotation (180 degrees around Y-axis)
+
+    private void Start()
     {
-        PlrRb = GetComponentInChildren<Rigidbody>();
-        StickMan_Anim = GetComponentInChildren<Animator>();
+        playerRB = GetComponent<Rigidbody>();
+        animator = GetComponent<Animator>();
+        audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
+        footstepsSound = GetComponent<AudioSource>();
+        measurer = GameObject.FindObjectOfType<Measurer>();
 
-        GameObject groundPrefab = GameObject.FindGameObjectWithTag("Ground");
-        if (groundPrefab != null)
-        {
-            Debug.Log("Ground prefab found!");
-            // You can perform additional actions here if the Ground prefab is found
-        }
-        else
-        {
-            Debug.Log("No Ground prefab found in the scene!");
-            // Handle the case where no Ground prefab is found (e.g., spawn one dynamically)
-        }
+        finalStandingPositionZ = measurer.GetRoadLength() + 1.5f;
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        // Handle input using switch-case
+        switch (GetInputType())
         {
-            MoveByTouch = true;
+            case InputType.Walk:
+                isMoveByTouch = true;
+                break;
+
+            case InputType.Stop:
+                isMoveByTouch = false;
+                animator.SetBool("IsRunning", false);
+                footstepsSound.Stop();
+                break;
+
+            case InputType.Jump:
+                ActionJump();
+                break;
+
+            default:
+                break;
         }
 
-        if (Input.GetMouseButtonUp(0))
+        // Move player if allowed and not reached final
+        if (isMoveByTouch && isNotFall && !hasReachedFinal)
         {
-            MoveByTouch = false;
-        }
-
-        if (Input.GetKeyDown(KeyCode.Space)) // Check for spacebar key press to trigger jump
-        {
-            TryJump();
-        }
-
-        if (MoveByTouch)
-        {
-            MovePlayer();
+            ActionRun();
         }
         else
         {
-            StickMan_Anim.SetFloat("run", 0f); // Stop walk animation if not moving
+            walkSpeed = BASE_WALK_SPEED;
+            animator.SetBool("IsRunning", false);
+            footstepsSound.Stop();
+        }
+
+        // Handle reaching the final destination
+        if (hasReachedFinal && !isNotFall)
+        {
+            float t = Time.deltaTime * BASE_INTERPOLATION_SPEED; // Adjust the interpolation speed if needed
+            transform.position = Vector3.Lerp(transform.position, targetPosition, t);
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, t);
+
+            // Check if the distance between current position and target position is small enough to consider reached
+            if (Vector3.Distance(transform.position, targetPosition) < 0.01f)
+            {
+                transform.position = targetPosition; // Snap to the final position
+                transform.rotation = targetRotation; // Snap to the final rotation
+            }
         }
     }
 
-    void MovePlayer()
+    // Define enum for input types
+    public enum InputType
     {
-        // Calculate movement direction based on input
-        float moveInput = Input.GetAxis("Horizontal"); // Assuming horizontal movement
-        Vector3 movement = new Vector3(moveInput, 0f, 1f) * walkSpeed * Time.deltaTime;
-
-        // Apply movement to the player's position
-        transform.Translate(movement, Space.World);
-
-        StickMan_Anim.SetFloat("run", 1f); // Trigger walk animation based on movement
+        None,
+        Walk,
+        Stop,
+        Jump
     }
 
-    void TryJump()
+    // Method to determine the current input type
+    InputType GetInputType()
     {
-        if (isGrounded)
+        if (Input.GetMouseButtonDown(0))
+        {
+            return InputType.Walk;
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            return InputType.Stop;
+        }
+        else if (Input.GetKeyDown(KeyCode.Space))
+        {
+            return InputType.Jump;
+        }
+        else
+        {
+            return InputType.None;
+        }
+    }
+
+    void ActionRun()
+    {
+        if (!hasReachedFinal)
+        {
+            // Calculate movement direction based on input
+            float moveInput = Input.GetAxis("Horizontal");
+            Vector3 movement = new Vector3(moveInput, 0f, 0.5f) * walkSpeed * Time.deltaTime;
+
+            walkSpeed += Time.deltaTime * BASE_ACCELARATION;
+            transform.Translate(movement, Space.World);
+
+            animator.SetBool("IsRunning", true);
+            PlayFootstepSound();
+        }
+    }
+
+    void ActionJump()
+    {
+        if (isOnGround)
         {
             Debug.Log("Jumping!");
-            PlrRb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            StickMan_Anim.SetTrigger("jump"); // Trigger jump animation
+            audioManager.PlaySFX(audioManager.jump);
+            playerRB.AddForce(new Vector3(0, jumpForce, leapLength), ForceMode.Impulse);
         }
         else
         {
@@ -83,26 +149,76 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    void PlayFootstepSound()
+    {
+        if (!footstepsSound.isPlaying)
+        {
+            footstepsSound.Play();
+        }
+    }
+
     void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Entering: ");
-        Debug.Log(collision.gameObject.tag);
-        // Check if the player collides with a ground object (tagged as "Ground" for example)
-        if (collision.gameObject.CompareTag("Ground"))
+        Debug.Log("Entering: " + collision.gameObject.tag);
+
+        // Check if the player collides with a hurdle (tagged as "Hurdle")
+        if (collision.gameObject.CompareTag("Hurdle"))
         {
-            isGrounded = true;
+            walkSpeed = BASE_WALK_SPEED;
+            animator.SetBool("IsFalling", true);
+            audioManager.PlaySFX(audioManager.crash_chicken);
+
+            Rigidbody hurdleRb = collision.gameObject.GetComponent<Rigidbody>();
+
+            Quaternion currentRotation = hurdleRb.rotation;
+            Quaternion newRotation = Quaternion.Euler(currentRotation.eulerAngles.x, currentRotation.eulerAngles.y, 90f);
+            hurdleRb.MoveRotation(newRotation);
+
+            Vector3 currentPosition = hurdleRb.position;
+            Vector3 newPosition = new Vector3(currentPosition.x, -0.5f, currentPosition.z);
+            hurdleRb.MovePosition(newPosition);
+
+            StartCoroutine(DisableMovementForDuration(3f));
+        }
+
+        // Check if the player collides with a ground object (tagged as "Ground")
+        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Final"))
+        {
+            isOnGround = true;
+        }
+
+        if (collision.gameObject.CompareTag("Final"))
+        {
+            hasReachedFinal = true;
+            isNotFall = false; // Disable further movement
+            targetPosition = new Vector3(transform.position.x, transform.position.y, finalStandingPositionZ);
+            targetRotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y + 180f, 0f);
+            animator.SetBool("IsWinning", true);
+            audioManager.PlaySFX(audioManager.cheer);
+            Debug.Log("Reached Final!");
         }
     }
 
     void OnCollisionExit(Collision collision)
     {
-        Debug.Log("Exiting: ");
-        Debug.Log(collision.gameObject.tag);
+        Debug.Log("Exiting: " + collision.gameObject.tag);
 
         // Reset isGrounded when the player leaves the ground
         if (collision.gameObject.CompareTag("Ground"))
         {
-            isGrounded = false;
+            isOnGround = false;
         }
+    }
+
+    IEnumerator DisableMovementForDuration(float duration)
+    {
+        isNotFall = false;
+        isOnGround = false;
+        yield return new WaitForSeconds(duration);
+        Debug.Log("Awaken!");
+        isOnGround = true;
+        isNotFall = true;
+        animator.SetBool("IsFalling", false);
+        playerRB.AddForce(new Vector3(0, 1f, 0), ForceMode.Impulse);
     }
 }
