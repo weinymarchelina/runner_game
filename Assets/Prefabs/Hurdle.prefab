@@ -60,6 +60,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 168422d3b96adda4091f6d2cecf7f068, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 08504894c11083642b8385dd2b30192e, type: 2}
     - target: {fileID: 919132149155446097, guid: 168422d3b96adda4091f6d2cecf7f068, type: 3}
       propertyPath: m_Name
       value: Hurdle

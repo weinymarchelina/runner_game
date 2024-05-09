@@ -11,10 +11,12 @@ TagManager:
   - Audio
   - Platform
   - HurdleSpawner
-  - obstacle
-  - add
-  - hit
   - Roads
+  - Logic
+  - Player1
+  - Player2
+  - HurdleSpawner1
+  - HurdleSpawner2
   layers:
   - Default
   - TransparentFX
@@ -22,8 +24,8 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
+  - P1 Cam
+  - P2 Cam
   - 
   - 
   - 

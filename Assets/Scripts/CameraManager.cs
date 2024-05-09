@@ -1,12 +1,16 @@
 using UnityEngine;
 using Cinemachine;
+using System.Collections;
 
 public class CameraManager : MonoBehaviour
 {
     public CinemachineVirtualCamera virtualCamera;
     private Measurer measurer;
 
-    public float stopFollowZPosition = 10f;
+    public float stopFollowZPosition = 30f;
+    public float stopFollowXPositionPlayer1 = 0f;
+    public float stopFollowXPositionPlayer2 = 20f;
+
     private bool stopFollowing = false;
 
     private Vector3 targetPosition; // Target position to smoothly move towards
@@ -14,17 +18,52 @@ public class CameraManager : MonoBehaviour
 
     void Start()
     {
+        StartCoroutine(InitializeCameraManager());
+    }
+
+    IEnumerator InitializeCameraManager()
+    {
         // Get the Cinemachine Virtual Camera component
         virtualCamera = GetComponent<CinemachineVirtualCamera>();
-        measurer = GameObject.FindObjectOfType<Measurer>();
 
+        // Wait for the Measurer component to be initialized
+        yield return WaitForMeasurerInitialization();
+
+        // Calculate stopFollowZPosition based on road length
         stopFollowZPosition = measurer.GetRoadLength() * 0.95f;
-        targetPosition = new Vector3(0f, 1f, stopFollowZPosition);
+
+        // Determine targetPosition based on the tag of the followed object (Player1 or Player2)
+        if (virtualCamera.Follow != null)
+        {
+            string followTag = virtualCamera.Follow.tag;
+
+            if (followTag == "Player1")
+            {
+                targetPosition = new Vector3(stopFollowXPositionPlayer1, 1f, stopFollowZPosition);
+            }
+            else if (followTag == "Player2")
+            {
+                targetPosition = new Vector3(stopFollowXPositionPlayer2, 1f, stopFollowZPosition);
+            }
+            else
+            {
+                Debug.LogWarning("Followed object has an unrecognized tag.");
+            }
+        }
+    }
+
+    IEnumerator WaitForMeasurerInitialization()
+    {
+        while (measurer == null)
+        {
+            measurer = GameObject.FindObjectOfType<Measurer>();
+            yield return null; // Wait for one frame before checking again
+        }
     }
 
     void Update()
     {
-        if (!stopFollowing && virtualCamera.transform.position.z >= stopFollowZPosition)
+        if (!stopFollowing && virtualCamera != null && virtualCamera.transform.position.z >= stopFollowZPosition)
         {
             stopFollowing = true;
 

@@ -7,7 +7,7 @@ public class Measurer : MonoBehaviour
     private float totalLength = 0f;
     void Start()
     {
-        totalLength =  CalculateTotalLength();
+        totalLength = CalculateTotalLength();
         Debug.Log("Total Length of the Road: " + totalLength);
     }
 
