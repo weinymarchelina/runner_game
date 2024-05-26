@@ -14,6 +14,12 @@ public class BodySourceView : MonoBehaviour
 
     public float upHandThreshold = 10.0f;
 
+    // Define the boundaries for the domain
+    //public float minX = -10;
+    //public float maxX = 0f;
+    //public float minY = 0f;
+    //public float maxY = 10f;
+
     private Dictionary<ulong, GameObject> mBodies = new Dictionary<ulong, GameObject>();
     private Dictionary<ulong, PlayerManager> playerTracking = new Dictionary<ulong, PlayerManager>();
     private List<JointType> _joints = new List<JointType>
@@ -30,6 +36,20 @@ public class BodySourceView : MonoBehaviour
             return;
         }
 
+        // Check active scene and switch functionality
+        if (SceneManager.GetActiveScene().name == "MainMenu")
+        {
+            HandleCursorControl();
+        }
+        else if (SceneManager.GetActiveScene().name == "SampleScene")
+        {
+            HandleAvatarControl();
+        }
+    }
+
+    void HandleCursorControl()
+    {
+        #region Get Kinect data
         Body[] data = mBodySourceManager.GetData();
         if (data == null)
         {
@@ -37,18 +57,6 @@ public class BodySourceView : MonoBehaviour
             return;
         }
 
-        if (SceneManager.GetActiveScene().name == "MainMenu")
-        {
-            HandleCursorControl(data);
-        }
-        else if (SceneManager.GetActiveScene().name == "SampleScene")
-        {
-            HandleAvatarControl(data);
-        }
-    }
-
-    void HandleCursorControl(Body[] data)
-    {
         foreach (var body in data)
         {
             if (body == null || !body.IsTracked)
@@ -67,10 +75,19 @@ public class BodySourceView : MonoBehaviour
                 SimulateClick();
             }
         }
+        #endregion
     }
 
-    void HandleAvatarControl(Body[] data)
+    void HandleAvatarControl()
     {
+        #region Get Kinect data
+        Body[] data = mBodySourceManager.GetData();
+        if (data == null)
+        {
+            Debug.Log("No data received from BodySourceManager.");
+            return;
+        }
+
         List<ulong> trackedIds = new List<ulong>();
         foreach (var body in data)
         {
@@ -84,7 +101,9 @@ public class BodySourceView : MonoBehaviour
                 trackedIds.Add(body.TrackingId);
             }
         }
+        #endregion
 
+        #region Delete Kinect Bodies
         List<ulong> knownIds = new List<ulong>(mBodies.Keys);
         foreach (ulong trackingId in knownIds)
         {
@@ -97,7 +116,9 @@ public class BodySourceView : MonoBehaviour
                 Debug.Log("Destroyed body object for tracking ID: " + trackingId);
             }
         }
+        #endregion
 
+        #region Create Kinect Bodies
         foreach (var body in data)
         {
             if (body == null)
@@ -128,24 +149,29 @@ public class BodySourceView : MonoBehaviour
                 Debug.Log("Updated body object for tracking ID: " + body.TrackingId);
             }
         }
+        #endregion
     }
 
     private void SimulateClick()
     {
+        // Simulate a click action here
         Debug.Log("Simulate click action with both hands raised.");
 
+        // Check for EventSystem to ensure UI interaction
         if (EventSystem.current == null)
         {
             Debug.LogWarning("No EventSystem found. Ensure there is an EventSystem in the scene.");
             return;
         }
 
+        // Create a pointer event
         PointerEventData pointerData = new PointerEventData(EventSystem.current)
         {
             pointerId = -1,
             position = new Vector2(Screen.width / 2, Screen.height / 2) // Assuming center screen for cursor
         };
 
+        // Raycast to find the UI element under the cursor
         List<RaycastResult> results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pointerData, results);
 
@@ -154,6 +180,7 @@ public class BodySourceView : MonoBehaviour
             GameObject clickedObject = results[0].gameObject;
             Debug.Log("Clicked on: " + clickedObject.name);
 
+            // Simulate the click event on the UI element
             ExecuteEvents.Execute(clickedObject, pointerData, ExecuteEvents.pointerClickHandler);
         }
     }
@@ -167,6 +194,13 @@ public class BodySourceView : MonoBehaviour
             GameObject newJoint = Instantiate(mJointObject);
             newJoint.name = joint.ToString();
             newJoint.transform.parent = body.transform;
+
+            // Set the initial position within the desired range
+            //newJoint.transform.position = new Vector3(
+            //    Mathf.Clamp(0, minX, maxX), // Start in the middle of the X range
+            //    Mathf.Clamp(0, minY, maxY), // Start in the middle of the Y range
+            //    0 // Ensure the z position is 0 for 2D appearance
+            //);
         }
 
         return body;
@@ -182,10 +216,13 @@ public class BodySourceView : MonoBehaviour
             Joint sourceJoint = body.Joints[_joint];
             Vector3 targetPosition = GetVector3FromJoint(sourceJoint);
 
+            // Debug the raw target position
             Debug.Log($"Raw target position for {_joint}: {targetPosition}");
 
+            // Clamp the positions to stay within the defined domain
             targetPosition.z = 0; // Ensure the z position is 0 for 2D appearance
 
+            // Debug the clamped target position
             Debug.Log($"Clamped target position for {_joint}: {targetPosition}");
 
             Transform jointObject = bodyObject.transform.Find(_joint.ToString());
@@ -194,6 +231,7 @@ public class BodySourceView : MonoBehaviour
                 jointObject.position = targetPosition;
             }
 
+            // Check if left hand is raised
             if (_joint == JointType.HandLeft)
             {
                 if (targetPosition.y < upHandThreshold) // Adjust the threshold as necessary
@@ -211,6 +249,7 @@ public class BodySourceView : MonoBehaviour
             }
         }
 
+        // If left hand is raised, trigger the jump action
         if (jump && playerManager != null && playerManager.CanWalk())
         {
             playerManager.ActionJump();
