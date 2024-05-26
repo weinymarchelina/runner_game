@@ -11,14 +11,14 @@ public class PlayerManager : MonoBehaviour
     private LogicManager logicManager;
 
     private const float BASE_ACCELARATION = 0.5f;
-    private const float BASE_WALK_SPEED = 0.5f;
+    private const float BASE_WALK_SPEED = 1f;
     private const float BASE_INTERPOLATION_SPEED = 2.5f;
 
-    public float finalStandingPositionZ = 25f;
+    private float finalStandingPositionZ = 25f;
 
-    public float walkSpeed = BASE_WALK_SPEED;
-    public float jumpForce = 3f;
-    public float leapLength = 1f;
+    private float walkSpeed = BASE_WALK_SPEED;
+    private float jumpForce = 1.3f;
+    private float leapLength = 1f;
 
     private bool isMoveByTouch = false;
     private bool isOnGround = false;

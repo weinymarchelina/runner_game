@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Windows.Kinect;
 using Joint = Windows.Kinect.Joint;
 using UnityEngine.EventSystems;
+using Unity.VisualScripting;
 
 public class BodySourceView : MonoBehaviour
 {
@@ -12,7 +13,7 @@ public class BodySourceView : MonoBehaviour
     public PlayerManager mPlayerManager1; // For Player 1
     public PlayerManager mPlayerManager2; // For Player 2
 
-    public float upHandThreshold = 10.0f;
+    private float upHandThreshold = 5f;
 
     // Define the boundaries for the domain
     //public float minX = -10;
@@ -242,8 +243,9 @@ public class BodySourceView : MonoBehaviour
 
             if (_joint == JointType.HandRight)
             {
-                if (targetPosition.y > upHandThreshold)
+                if (targetPosition.y >= upHandThreshold)
                 {
+                    Debug.Log("IJJJDJIsndusda");
                     run = true;
                 }
             }
