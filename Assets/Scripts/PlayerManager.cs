@@ -182,7 +182,7 @@ public class PlayerManager : MonoBehaviour
         return InputType.None;
     }
 
-    void ActionRun()
+    public void ActionRun()
     {
         if (!hasReachedFinal)
         {
@@ -198,7 +198,7 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    void ActionJump()
+    public void ActionJump()
     {
         if (isOnGround)
         {
@@ -295,5 +295,9 @@ public class PlayerManager : MonoBehaviour
         isAbleToWalk = true;
         animator.SetBool("IsFalling", false);
         playerRB.AddForce(new Vector3(0, 1f, 0), ForceMode.Impulse);
+    }
+    public bool CanWalk()
+    {
+        return isAbleToWalk;
     }
 }
