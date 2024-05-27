@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerManager : MonoBehaviour
 {
@@ -59,6 +60,11 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    private IEnumerator LoadSceneAfterDelay(string sceneName, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        SceneManager.LoadScene(sceneName);
+    }
     void Update()
     {
         // Handle input using switch-case
@@ -123,6 +129,9 @@ public class PlayerManager : MonoBehaviour
             {
                 animator.SetBool("IsLosing", true);
             }
+
+            string sceneToLoad = (logicManager.winnerPlayer == "Player1") ? "RestartScene" : "RabbitScene";
+            StartCoroutine(LoadSceneAfterDelay(sceneToLoad, 5f));
         }
     }
 
