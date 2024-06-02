@@ -4,14 +4,17 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour
-{
-    public void StartGame()
+{ 
+    public void PlayGame()
     {
-        SceneManager.LoadSceneAsync("SampleScene");
+        Debug.Log("Game will start");
+        SceneManager.LoadSceneAsync("RunnerScene");
+        
     }
 
-    public void ExitGame()
+    public void QuitGame()
     {
+        Debug.Log("Exit game");
         Application.Quit();
     }
 }

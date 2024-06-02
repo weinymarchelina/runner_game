@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerManager : MonoBehaviour
 {
@@ -11,14 +12,14 @@ public class PlayerManager : MonoBehaviour
     private LogicManager logicManager;
 
     private const float BASE_ACCELARATION = 0.5f;
-    private const float BASE_WALK_SPEED = 0.5f;
+    private const float BASE_WALK_SPEED = 1f;
     private const float BASE_INTERPOLATION_SPEED = 2.5f;
 
-    public float finalStandingPositionZ = 25f;
+    private float finalStandingPositionZ = 25f;
 
-    public float walkSpeed = BASE_WALK_SPEED;
-    public float jumpForce = 3f;
-    public float leapLength = 1f;
+    private float walkSpeed = BASE_WALK_SPEED;
+    private float jumpForce = 1.3f;
+    private float leapLength = 1f;
 
     private bool isMoveByTouch = false;
     private bool isOnGround = false;
@@ -59,6 +60,11 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    private IEnumerator LoadSceneAfterDelay(string sceneName, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        SceneManager.LoadScene(sceneName);
+    }
     void Update()
     {
         // Handle input using switch-case
@@ -123,6 +129,9 @@ public class PlayerManager : MonoBehaviour
             {
                 animator.SetBool("IsLosing", true);
             }
+
+            string sceneToLoad = (logicManager.winnerPlayer == "Player1") ? "RestartScene" : "RabbitScene";
+            StartCoroutine(LoadSceneAfterDelay(sceneToLoad, 5f));
         }
     }
 
@@ -182,7 +191,7 @@ public class PlayerManager : MonoBehaviour
         return InputType.None;
     }
 
-    void ActionRun()
+    public void ActionRun()
     {
         if (!hasReachedFinal)
         {
@@ -198,7 +207,7 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    void ActionJump()
+    public void ActionJump()
     {
         if (isOnGround)
         {
@@ -295,5 +304,9 @@ public class PlayerManager : MonoBehaviour
         isAbleToWalk = true;
         animator.SetBool("IsFalling", false);
         playerRB.AddForce(new Vector3(0, 1f, 0), ForceMode.Impulse);
+    }
+    public bool CanWalk()
+    {
+        return isAbleToWalk;
     }
 }
